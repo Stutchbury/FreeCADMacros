@@ -1,0 +1,2 @@
+# FreeCADMacros
+FreeCAD Python Macros
