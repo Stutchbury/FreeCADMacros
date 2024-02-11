@@ -1,0 +1,97 @@
+# Unmodel or re-model PartDesign::Hole threads for an active document.
+
+
+__Name__ = 'Unmodel or re-model Part Design Threads'
+__Comment__ = 'Unmodel or re-model PartDesign::Hole threads for an active document'
+__License__ = 'LGPL v2.1'
+__Web__ = 'https://github.com/Stutchbury/FreeCADMacros'
+__Wiki__ = None
+__Icon__ = None
+__Help__ = 'Launch and enter parameters'
+__Author__ = 'Philip Fletcher'
+__Version__ = '1.0.0'
+__Date__ = '2024-02-11'
+__Status__ = 'Stable'
+__Requires__ = 'FreeCAD >= v0.17'
+__Files__ = None
+
+from PySide import QtCore
+from PySide import QtGui
+
+class ModelThreadsModalGuiClass(QtGui.QDialog):
+    """"""
+    def __init__(self):
+        super(ModelThreadsModalGuiClass, self).__init__()
+        self.initUI()
+
+    def initUI(self):
+        # create our window
+        # define window        xLoc,yLoc,xDim,yDim
+        #self.setGeometry(    250, 250, 400, 350)
+        self.setWindowTitle("(Un)Model Threads")
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+
+        self.unmodelThreadsButton = QtGui.QPushButton("Unmodel Threads", self)
+        self.unmodelThreadsButton.clicked.connect(self.onUnmodelThreads)
+        self.unmodelThreadsButton.move(255, 80)
+
+        self.modelThreadsButton = QtGui.QPushButton("Model Threads", self)
+        self.modelThreadsButton.clicked.connect(self.onModelThreads)
+        self.modelThreadsButton.move(150, 80)
+
+        self.cancelButton = QtGui.QPushButton("Cancel", self)
+        self.cancelButton.clicked.connect(self.onCancel)
+        self.cancelButton.move(20, 80)
+
+        self.minThreadSizeLabel = QtGui.QLabel("Thread Size Larger Than:", self)
+        self.minThreadSizeLabel.move(20, 20)
+
+        self.minThreadSize = QtGui.QSpinBox(self)
+        self.minThreadSize.setProperty('minimum', 0)
+        self.minThreadSize.setProperty('raw_value', 12)
+        self.minThreadSize.setProperty('value', 12)
+        self.minThreadSize.move(220,20)
+
+        self.result = 'Cancel'
+        self.show()
+
+
+    def onModelThreads(self):
+        #processDoc(True, minThreadSize.property('value'))
+        self.result = 'Model'
+        self.close()
+
+    def onUnmodelThreads(self):
+        #processDoc(False, minThreadSize.property('value'))
+        self.result = 'UnModel'
+        self.close()
+
+    def onCancel(self):
+        self.close()
+
+def processDoc(modelThreads, size):
+    doc = App.ActiveDocument
+    if not doc:
+        return "No active document"
+    recompute = False
+    objs = App.ActiveDocument.Objects    
+    for obj in objs:
+        if obj.TypeId == "PartDesign::Hole":
+            if obj.Diameter > size:
+                if obj.Threaded and obj.ModelThread != modelThreads:
+                    App.Console.PrintMessage("Updating thread...\n")
+                    obj.ModelThread = modelThreads
+                    recompute = True
+    if ( recompute ):
+        App.Console.PrintMessage('Recomputing threads....')
+        App.activeDocument().recompute(None,True,True)
+    else:
+        App.Console.PrintMessage('No threads to update.')
+
+
+
+form = ModelThreadsModalGuiClass()
+form.exec_()
+if ( form.result != 'Cancel' ):
+    processDoc(True if form.result == 'Model' else False, form.minThreadSize.property('value'))
+App.Console.PrintMessage('Done')
